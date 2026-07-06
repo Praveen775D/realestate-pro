@@ -208,6 +208,7 @@ function AddProperty() {
       }
 
     };
+    console.log("Payload:", payload);
 
     await createProperty(payload);
 
