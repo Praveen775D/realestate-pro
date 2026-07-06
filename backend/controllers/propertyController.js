@@ -6,13 +6,13 @@ import Property from "../models/Property.js";
 
 export const createProperty = async (req, res) => {
   try {
+
     const propertyData = {
       ...req.body,
     };
 
-    // Save Cloudinary image URL
     if (req.file) {
-      propertyData.image = req.file.path;
+      propertyData.images = [req.file.path];
     }
 
     const property = await Property.create(propertyData);
@@ -22,13 +22,16 @@ export const createProperty = async (req, res) => {
       message: "Property Created Successfully",
       property,
     });
+
   } catch (error) {
-    console.error(error);
+
+    console.log(error);
 
     res.status(500).json({
       success: false,
       message: error.message,
     });
+
   }
 };
 
