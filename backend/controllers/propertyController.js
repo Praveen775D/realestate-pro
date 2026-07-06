@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Property from "../models/Property.js";
 
 // ==========================================
@@ -6,13 +7,13 @@ import Property from "../models/Property.js";
 
 export const createProperty = async (req, res) => {
   try {
-
     const propertyData = {
       ...req.body,
     };
 
-    if (req.file) {
-      propertyData.images = [req.file.path];
+    // Save uploaded Cloudinary image URLs
+    if (req.files && req.files.length > 0) {
+      propertyData.images = req.files.map((file) => file.path);
     }
 
     const property = await Property.create(propertyData);
@@ -22,16 +23,13 @@ export const createProperty = async (req, res) => {
       message: "Property Created Successfully",
       property,
     });
-
   } catch (error) {
-
-    console.log(error);
+    console.error("Create Property Error:", error);
 
     res.status(500).json({
       success: false,
       message: error.message,
     });
-
   }
 };
 
@@ -41,7 +39,6 @@ export const createProperty = async (req, res) => {
 
 export const getAllProperties = async (req, res) => {
   try {
-
     const properties = await Property.find().sort({
       createdAt: -1,
     });
@@ -51,16 +48,13 @@ export const getAllProperties = async (req, res) => {
       total: properties.length,
       properties,
     });
-
   } catch (error) {
-
-    console.error(error);
+    console.error("Get Properties Error:", error);
 
     res.status(500).json({
       success: false,
       message: error.message,
     });
-
   }
 };
 
@@ -70,8 +64,17 @@ export const getAllProperties = async (req, res) => {
 
 export const getPropertyById = async (req, res) => {
   try {
+    const { id } = req.params;
 
-    const property = await Property.findById(req.params.id);
+    // Validate MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Property ID",
+      });
+    }
+
+    const property = await Property.findById(id);
 
     if (!property) {
       return res.status(404).json({
@@ -81,23 +84,19 @@ export const getPropertyById = async (req, res) => {
     }
 
     property.views += 1;
-
     await property.save();
 
     res.status(200).json({
       success: true,
       property,
     });
-
   } catch (error) {
-
-    console.error(error);
+    console.error("Get Property Error:", error);
 
     res.status(500).json({
       success: false,
       message: error.message,
     });
-
   }
 };
 
@@ -107,10 +106,27 @@ export const getPropertyById = async (req, res) => {
 
 export const updateProperty = async (req, res) => {
   try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Property ID",
+      });
+    }
+
+    const updateData = {
+      ...req.body,
+    };
+
+    // Update Cloudinary images
+    if (req.files && req.files.length > 0) {
+      updateData.images = req.files.map((file) => file.path);
+    }
 
     const property = await Property.findByIdAndUpdate(
-      req.params.id,
-      req.body,
+      id,
+      updateData,
       {
         new: true,
         runValidators: true,
@@ -129,16 +145,13 @@ export const updateProperty = async (req, res) => {
       message: "Property Updated Successfully",
       property,
     });
-
   } catch (error) {
-
-    console.error(error);
+    console.error("Update Property Error:", error);
 
     res.status(500).json({
       success: false,
       message: error.message,
     });
-
   }
 };
 
@@ -148,8 +161,16 @@ export const updateProperty = async (req, res) => {
 
 export const deleteProperty = async (req, res) => {
   try {
+    const { id } = req.params;
 
-    const property = await Property.findById(req.params.id);
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Property ID",
+      });
+    }
+
+    const property = await Property.findById(id);
 
     if (!property) {
       return res.status(404).json({
@@ -164,16 +185,13 @@ export const deleteProperty = async (req, res) => {
       success: true,
       message: "Property Deleted Successfully",
     });
-
   } catch (error) {
-
-    console.error(error);
+    console.error("Delete Property Error:", error);
 
     res.status(500).json({
       success: false,
       message: error.message,
     });
-
   }
 };
 
@@ -183,7 +201,6 @@ export const deleteProperty = async (req, res) => {
 
 export const getFeaturedProperties = async (req, res) => {
   try {
-
     const properties = await Property.find({
       featured: true,
     });
@@ -192,14 +209,13 @@ export const getFeaturedProperties = async (req, res) => {
       success: true,
       properties,
     });
-
   } catch (error) {
+    console.error("Featured Properties Error:", error);
 
     res.status(500).json({
       success: false,
       message: error.message,
     });
-
   }
 };
 
@@ -209,7 +225,6 @@ export const getFeaturedProperties = async (req, res) => {
 
 export const getAvailableProperties = async (req, res) => {
   try {
-
     const properties = await Property.find({
       status: "Available",
     });
@@ -218,14 +233,13 @@ export const getAvailableProperties = async (req, res) => {
       success: true,
       properties,
     });
-
   } catch (error) {
+    console.error("Available Properties Error:", error);
 
     res.status(500).json({
       success: false,
       message: error.message,
     });
-
   }
 };
 
@@ -235,7 +249,6 @@ export const getAvailableProperties = async (req, res) => {
 
 export const searchProperties = async (req, res) => {
   try {
-
     const keyword = req.query.keyword || "";
 
     const properties = await Property.find({
@@ -266,13 +279,12 @@ export const searchProperties = async (req, res) => {
       total: properties.length,
       properties,
     });
-
   } catch (error) {
+    console.error("Search Property Error:", error);
 
     res.status(500).json({
       success: false,
       message: error.message,
     });
-
   }
 };
